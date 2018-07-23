@@ -142,8 +142,6 @@ srf.use('invite', (req, res, next) => {
 
 srf.invite(regMiddleware, (req, res) => {
 
-    //res.send(480, "You Shall Not Pass! Motherfucker, FUCK YOU!");
-
     const uri = parseUri(req.uri);
 
     const fromUri = parseUri(req.headers.from.replace('<', '').replace('>', ''));
@@ -165,7 +163,7 @@ srf.invite(regMiddleware, (req, res) => {
     };
 
     if (req.source_address == '157.52.146.74') {
-        res.send(480, "You Shall Not Pass! Motherfucker, FUCK YOU!");
+        res.send(480, "You Shall Not Pass!");
         return;
     }
 
