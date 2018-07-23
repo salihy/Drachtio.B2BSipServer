@@ -1,0 +1,67 @@
+{
+  "drachtio": {
+    "host": "192.168.0.87",
+    "port": 9022,
+    "secret": "cymru"
+  },
+  "rtpengine": {
+    "host": "192.168.0.87",
+    "port": 22222,
+    "local-port": 2223
+  },
+  "trunks": [
+    {
+      "id": 1,
+      "ip": "185.86.153.82",
+      "port": "5060",
+      "callingnumber": "ZZZZZZZZ",
+      "username": "XXXXXXX",
+      "password": "YYYYYYY"
+    }
+  ],
+  "routes": [
+    {
+      "trunkid": "1",
+      "route": "5079@192.168.0.144:5060"
+    }
+  ],
+  "domain": "janus.kahvalt.im",
+  "destination": "185.86.153.82",
+  //"destination": "192.168.0.28",
+  "FromAccount": "XXXXXXX",
+  "B2BUARtp": true,
+  "users": [
+    {
+      "username": "1000",
+      "password": "1234"
+    },
+    {
+      "username": "1001",
+      "password": "1234"
+    },
+    {
+      "username": "1002",
+      "password": "1234"
+    },
+    {
+      "username": "1003",
+      "password": "1234"
+    },
+    {
+      "username": "1004",
+      "password": "1234"
+    },
+    {
+      "username": "1005",
+      "password": "1234"
+    },
+    {
+      "username": "1006",
+      "password": "1234"
+    },
+    {
+      "username": "1007",
+      "password": "1234"
+    }
+  ]
+}
