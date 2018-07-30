@@ -52,36 +52,36 @@ srf.connect(config.get('drachtio'))
         }
 
         var trunk = config.get("trunks")[0];
-        srf.request({
-            uri: `sip:${trunk.ip}:${trunk.port}`,
-            method: "REGISTER",
-            headers: {
-                "Contact": `sip:${trunk.callingnumber}@${trunk.ip}:${trunk.port}`,
-                "To": `"${trunk.callingnumber}"<sip:${trunk.username}@${trunk.ip}:${trunk.port}>`,
-                "From": `"${trunk.callingnumber}"<sip:${trunk.username}@${trunk.ip}:${trunk.port}>`,
-                "User-Agent": "viases-pbx",
-                //"Allow": "INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, NOTIFY, MESSAGE, SUBSCRIBE, INFO"
-            },
-            auth: {
-                username: trunk.username,
-                password: trunk.password
-            }
-        }, function (err, req) {
-            if (err) {
-                throw err;
-            }
-            req.on("response", function (res) {
-                if (res.status < 200) {
-                    console.log("Response " + res.status)
-                    return;
-                }
-                if (200 !== res.msg.status) {
-                    console.log("Error registering: " + res.msg.status);
-                } else {
-                    console.log("registered successfully");
-                }
-            });
-        });
+        //srf.request({
+        //    uri: `sip:${trunk.ip}:${trunk.port}`,
+        //    method: "REGISTER",
+        //    headers: {
+        //        "Contact": `sip:${trunk.did}@${trunk.ip}:${trunk.port}`,
+        //        "To": `"${trunk.did}"<sip:${trunk.username}@${trunk.ip}:${trunk.port}>`,
+        //        "From": `"${trunk.did}"<sip:${trunk.username}@${trunk.ip}:${trunk.port}>`,
+        //        "User-Agent": "viases-pbx"
+        //        //"Allow": "INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, NOTIFY, MESSAGE, SUBSCRIBE, INFO"
+        //    },
+        //    auth: {
+        //        username: trunk.username,
+        //        password: trunk.password
+        //    }
+        //}, function (err, req) {
+        //    if (err) {
+        //        throw err;
+        //    }
+        //    req.on("response", function (res) {
+        //        if (res.status < 200) {
+        //            console.log("Response " + res.status)
+        //            return;
+        //        }
+        //        if (200 !== res.msg.status) {
+        //            console.log("Error registering: " + res.msg.status);
+        //        } else {
+        //            console.log("registered successfully");
+        //        }
+        //    });
+        //});
 
         console.log(`connected hostport: ${hostport}`);
     })
@@ -90,8 +90,13 @@ srf.connect(config.get('drachtio'))
     });
 
 
+//srf.use('register', passport.authenticate('digest', { session: false }));
+//srf.use('invite', passport.authenticate('digest', { session: false }));
+
 srf.register(regMiddleware, (req, res) => {
+
     console.log(`got a successful registration: ${JSON.stringify(req.registration)}`);
+
     const hasExpires = typeof req.registration.contact[0].params.expires !== 'undefined';
     const headers = {};
     if (!hasExpires) {
@@ -101,32 +106,23 @@ srf.register(regMiddleware, (req, res) => {
         headers['Contact'] = `${req.get('Contact')}`;
     }
 
-    if (true) { //viases identity authentication yapilacak.
-        res.send(200, { headers });
+    res.send(200, { headers });
 
-        const parsedUri = parseUri(req.registration.aor);
-        if (req.registration.type === 'register') {
-            users.set(parsedUri.user, req.registration.contact[0].uri);
-        }
-        else {
-            users.delete(parsedUri.user);
-        }
+    var parsedUri = parseUri(req.registration.aor);
+     
+    if (req.registration.type === 'register') {
+        users.set(parsedUri.user, req.registration.contact[0].uri);
     }
     else {
-        res.send(401, 'User Not Found in Viases Identity System');
+        users.delete(parsedUri.user);
     }
-    
-
 
     console.log(`there are now ${users.size} registered users after dealing with ${parsedUri.user}`);
 });
 
 
-//srf.use('register', passport.authenticate('digest', { session: false }));
-//srf.use('invite', passport.authenticate('digest', { session: false }));
-
 srf.use('invite', (req, res, next) => {
-    if (config.get('trunks').filter(w => w.ip == req.source_address).length > 0) {
+    if (config.get('trunks').filter(w => w.ip === req.source_address).length > 0) {
         next();
     }
     //else {
@@ -148,12 +144,15 @@ srf.invite(regMiddleware, (req, res) => {
     var isInbound;
 
     if (fromUri) {
-        isInbound = config.get("trunks").filter(w => w.ip == fromUri.host)[0];
+        isInbound = config.get("trunks").filter(w => w.ip === fromUri.host)[0];
+        if (!isInbound) {
+            isInbound = config.get("trunks").filter(w => w.host.indexOf(fromUri.host) >= 0 )[0];
+        }
     }
     var inboundRoute;
 
     if (isInbound) {
-        inboundRoute = config.get("routes").filter(w => w.trunkid == isInbound.id)[0];
+        inboundRoute = config.get("routes").filter(w => w.trunkid === isInbound.id)[0];
     }
 
     const from = req.getParsedHeader('From');
@@ -162,7 +161,7 @@ srf.invite(regMiddleware, (req, res) => {
         'from-tag': from.params.tag
     };
 
-    if (req.source_address == '157.52.146.74') {
+    if (req.source_address === '157.52.146.74') {
         res.send(480, "You Shall Not Pass!");
         return;
     }
@@ -173,8 +172,8 @@ srf.invite(regMiddleware, (req, res) => {
         //dest = `sip:${config.get('FromAccount')}@${config.get('destination')}`
 
         //req.callingNumber = config.get('FromAccount');
-
-        rtpengine.offer(locRtp, Object.assign(details, { 'sdp': req.body, 'record call': 'yes' }))
+         
+        rtpengine.offer(locRtp, Object.assign(details, { 'sdp': req.body, 'record call': 'yes', 'direction': ['ext', 'int']/*, 'media address':'10.188.227.170'*/ }))
             .then((rtpResponse) => {
                 console.log(`got response from rtpengine: ${JSON.stringify(rtpResponse)}`);
                 if (rtpResponse && rtpResponse.result === 'ok') return rtpResponse.sdp;
@@ -248,7 +247,7 @@ srf.invite(regMiddleware, (req, res) => {
         }
     }
     else {
-       dest = `sip:${uri.user}@${config.get('destination')}`;
+        dest = `sip:${uri.user}@${config.get('destination')}`;
         var trunk = config.get("trunks")[0];
         //dest = `sip:${config.get('FromAccount')}@${config.get('destination')}`
 
@@ -270,9 +269,9 @@ srf.invite(regMiddleware, (req, res) => {
                         password: trunk.password
                     }
                 })
-                .catch((err) => {
-                    console.log(`Error connecting call: ${err.message}`);
-                });
+                    .catch((err) => {
+                        console.log(`Error connecting call: ${err.message}`);
+                    });
             })
             .then(({ uas, uac }) => {
                 console.log('call connected with media proxy');
